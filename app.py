@@ -7,7 +7,12 @@ from linebot.v3.webhooks import MessageEvent, TextMessageContent
 from linebot.v3.messaging import (
     Configuration, ApiClient, MessagingApi,
     ReplyMessageRequest,
-    TextMessage
+    TextMessage,
+    TemplateMessage, ConfirmTemplate, MessageAction,
+    CarouselTemplate,
+    CarouselColumn,
+    URIAction,
+    PostbackAction
 )
 
 app = Flask(__name__)
