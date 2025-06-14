@@ -33,10 +33,13 @@ def callback():
 
 @line_handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
-    with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
+    print(f"[DEBUG] 收到訊息: {event.message.text}")  # Debug log
 
+    try:
+        api_client = ApiClient(configuration)
+        line_bot_api = MessagingApi(api_client)
         action = event.message.text
+
         if action == 'confirm':
             reply = TemplateMessage(
                 alt_text="這是確認視窗",
@@ -86,6 +89,10 @@ def handle_message(event):
                 ]
             )
         )
+        print("[DEBUG] 回覆成功:", response)
+
+    except Exception as e:
+        print("[ERROR] 發生錯誤:", str(e))
 
 if __name__ == "__main__":
     app.run()
