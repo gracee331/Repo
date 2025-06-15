@@ -41,7 +41,7 @@ def handle_message(event):
         line_bot_api = MessagingApi(api_client)
 
         if user_text == "start" or user_text == "":
-            reply = TextMessage(text="歡迎使用！請輸入 'confirm'、'carousel' 或任何問題和我聊天喔！")
+            reply = TextMessage(text="歡迎使用！請輸入 'confirm' 或 'carousel' 或任何話題和我聊聊喔！")
 
         elif user_text == "confirm":
             reply = TemplateMessage(
@@ -83,7 +83,7 @@ def handle_message(event):
                 template=carousel_template
             )
 
-       elif user_text != "":
+        else:
             try:
                 model = genai.GenerativeModel("gemini-pro")
                 response = model.generate_content(user_text)
@@ -91,14 +91,12 @@ def handle_message(event):
             except Exception as e:
                 reply = TextMessage(text=f"抱歉，Gemini 回應出錯了：{e}")
 
-
         line_bot_api.reply_message(
             ReplyMessageRequest(
                 reply_token=event.reply_token,
                 messages=[reply]
             )
         )
-
 
 if __name__ == "__main__":
     app.run()
