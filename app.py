@@ -1,6 +1,8 @@
 import os
 from flask import Flask, request, abort
 
+import google.generativeai as genai
+
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent
@@ -20,6 +22,8 @@ app = Flask(__name__)
 configuration = Configuration(access_token=os.getenv('LINE_CHANNEL_ACCESS_TOKEN'))
 line_handler = WebhookHandler(os.getenv('LINE_CHANNEL_SECRET'))
 
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
 @app.route("/callback", methods=['POST'])
 def callback():
     signature = request.headers['X-Line-Signature']
@@ -33,14 +37,15 @@ def callback():
 
 @line_handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
-    print(f"[DEBUG] 收到訊息: {event.message.text}")  # Debug log
+    user_text = event.message.text.strip().lower()
+    
+    with ApiClient(configuration) as api_client:
+        bot = MessagingApi(api_client)
 
-    try:
-        api_client = ApiClient(configuration)
-        line_bot_api = MessagingApi(api_client)
-        action = event.message.text
+        if user_text == "start" or user_text == "":
+            reply = TextMessage(text="歡迎使用！請輸入 'gemini', 'confirm' 或 'carousel' 來觸發互動功能喔！")
 
-        if action == 'confirm':
+        elif user_text == 'confirm':
             reply = TemplateMessage(
                 alt_text="這是確認視窗",
                 template=ConfirmTemplate(
@@ -51,48 +56,54 @@ def handle_message(event):
                     ]
                 )
             )
-        elif action == 'carousel':
-          carousel_template = CarouselTemplate(
-              columns=[
-                  CarouselColumn(
-                      thumbnail_image_url='https://upload.wikimedia.org/wikipedia/zh/4/4b/Big_Hero_6_%28film%29_poster.jpg',
-                      title='大英雄天團',
-                      text='可愛氣球杯麵主演的日本電影',
-                      actions=[
-                          URIAction(label='查看詳情', uri='https://www.niusnews.com/=P312ww05'),
-                          MessageAction(label="投票", text="我投杯麵一票")
-                      ]
-                ),
-                  CarouselColumn(
-                      thumbnail_image_url='https://upload.wikimedia.org/wikipedia/zh/d/d0/Snow_White_2025_poster.jpg',
-                      title='白雪公主',
-                      text='童話故事改編電影',
-                      actions=[
-                          URIAction(label='查看詳情', uri='https://meet.eslite.com/tw/tc/article/202504280001'),
-                          MessageAction(label="投票", text="我投白雪公主一票")
-                      ]
-                )
-            ]
-          )
-          reply = TemplateMessage(
-              alt_text="這是輪播視窗",
-              template=carousel_template
-            )
-        else:
-          reply = TextMessage(text='Thanks!')
 
-        line_bot_api.reply_message(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[
-                   reply
+        elif user_text == 'carousel':
+            carousel_template = CarouselTemplate(
+                columns=[
+                    CarouselColumn(
+                        thumbnail_image_url='https://upload.wikimedia.org/wikipedia/zh/4/4b/Big_Hero_6_%28film%29_poster.jpg',
+                        title='大英雄天團',
+                        text='可愛氣球杯麵主演的日本電影',
+                        actions=[
+                            URIAction(label='查看詳情', uri='https://www.niusnews.com/=P312ww05'),
+                            MessageAction(label="投票", text="我投杯麵一票")
+                        ]
+                    ),
+                    CarouselColumn(
+                        thumbnail_image_url='https://upload.wikimedia.org/wikipedia/zh/d/d0/Snow_White_2025_poster.jpg',
+                        title='白雪公主',
+                        text='童話故事改編電影',
+                        actions=[
+                            URIAction(label='查看詳情', uri='https://meet.eslite.com/tw/tc/article/202504280001'),
+                            MessageAction(label="投票", text="我投白雪公主一票")
+                        ]
+                    )
                 ]
             )
-        )
-        print("[DEBUG] 回覆成功:", response)
+            reply = TemplateMessage(
+                alt_text="這是輪播視窗",
+                template=carousel_template
+            )
 
-    except Exception as e:
-        print("[ERROR] 發生錯誤:", str(e))
+        elif user_text == 'gemini':
+            response = genai.chat.get_response(
+                model="models/chat-bison-001",
+                prompt=[{"role": "user", "content": user_text}],
+                temperature=0.7,
+                max_output_tokens=256
+            )
+            reply_text = response.text + "\n\n請輸入 'confirm' 或 'carousel' 來觸發對應功能喔！"
+            reply = TextMessage(text=reply_text)
+
+        else:
+            reply = TextMessage(text="Thanks! 請輸入 'gemini'、'confirm' 或 'carousel' 來觸發互動功能喔！")
+
+        bot.reply_message(
+            ReplyMessageRequest(
+                reply_token=event.reply_token,
+                messages=[reply]
+            )
+        )
 
 if __name__ == "__main__":
     app.run()
