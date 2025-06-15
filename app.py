@@ -1,6 +1,5 @@
 import os
 from flask import Flask, request, abort
-
 import google.generativeai as genai
 
 from linebot.v3 import WebhookHandler
@@ -13,8 +12,7 @@ from linebot.v3.messaging import (
     TemplateMessage, ConfirmTemplate, MessageAction,
     CarouselTemplate,
     CarouselColumn,
-    URIAction,
-    PostbackAction
+    URIAction
 )
 
 app = Flask(__name__)
@@ -43,7 +41,7 @@ def handle_message(event):
         line_bot_api = MessagingApi(api_client)
 
         if user_text == "start" or user_text == "":
-            reply = TextMessage(text="歡迎使用！請輸入 'confirm' 或 'carousel' 或任何話題和我聊聊喔！")
+            reply = TextMessage(text="歡迎使用！請輸入 'confirm'、'carousel' 或任何問題和我聊天喔！")
 
         elif user_text == "confirm":
             reply = TemplateMessage(
@@ -86,14 +84,12 @@ def handle_message(event):
             )
 
         else:
-            response = genai.chat.get_response(
-                model="models/chat-bison-001",
-                prompt=[{"role": "user", "content": user_text}],
-                temperature=0.7,
-                max_output_tokens=256
-            )
-            reply_text = response.text
-            reply = TextMessage(text=reply_text)
+            try:
+                chat = genai.GenerativeModel("gemini-pro").start_chat()
+                response = chat.send_message(user_text)
+                reply = TextMessage(text=response.text)
+            except Exception as e:
+                reply = TextMessage(text=f"抱歉，Gemini 回應出錯了：{str(e)}")
 
         line_bot_api.reply_message(
             ReplyMessageRequest(
