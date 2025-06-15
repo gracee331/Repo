@@ -84,12 +84,12 @@ def handle_message(event):
             )
 
        elif user_text != "":
-          try:
-              model = genai.GenerativeModel("gemini-pro")
-              response = model.generate_content(user_text)
-              reply = TextMessage(text=response.text)
-          except Exception as e:
-              reply = TextMessage(text=f"抱歉，Gemini 回應出錯了：{str(e)}")
+            try:
+                model = genai.GenerativeModel("gemini-pro")
+                response = model.generate_content(user_text)
+                reply = TextMessage(text=response.text)
+            except Exception as e:
+                reply = TextMessage(text=f"抱歉，Gemini 回應出錯了：{e}")
 
 
         line_bot_api.reply_message(
