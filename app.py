@@ -85,7 +85,7 @@ def handle_message(event):
 
         else:
             try:
-                model = genai.GenerativeModel("gemini-pro")
+                model = genai.GenerativeModel("gemini-2.0-flash")
                 response = model.generate_content(user_text)
                 reply = TextMessage(text=response.text)
             except Exception as e:
