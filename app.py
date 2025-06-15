@@ -83,13 +83,14 @@ def handle_message(event):
                 template=carousel_template
             )
 
-        else:
-            try:
-                chat = genai.GenerativeModel("gemini-pro").start_chat()
-                response = chat.send_message(user_text)
-                reply = TextMessage(text=response.text)
-            except Exception as e:
-                reply = TextMessage(text=f"抱歉，Gemini 回應出錯了：{str(e)}")
+       elif user_text != "":
+          try:
+              model = genai.GenerativeModel("gemini-pro")
+              response = model.generate_content(user_text)
+              reply = TextMessage(text=response.text)
+          except Exception as e:
+              reply = TextMessage(text=f"抱歉，Gemini 回應出錯了：{str(e)}")
+
 
         line_bot_api.reply_message(
             ReplyMessageRequest(
