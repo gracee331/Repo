@@ -38,14 +38,14 @@ def callback():
 @line_handler.add(MessageEvent, message=TextMessageContent)
 def handle_message(event):
     user_text = event.message.text.strip().lower()
-    
+
     with ApiClient(configuration) as api_client:
-        bot = MessagingApi(api_client)
+        line_bot_api = MessagingApi(api_client)
 
         if user_text == "start" or user_text == "":
-            reply = TextMessage(text="歡迎使用！請輸入 'gemini', 'confirm' 或 'carousel' 來觸發互動功能喔！")
+            reply = TextMessage(text="歡迎使用！請輸入 'confirm' 或 'carousel' 或任何話題和我聊聊喔！")
 
-        elif user_text == 'confirm':
+        elif user_text == "confirm":
             reply = TemplateMessage(
                 alt_text="這是確認視窗",
                 template=ConfirmTemplate(
@@ -57,7 +57,7 @@ def handle_message(event):
                 )
             )
 
-        elif user_text == 'carousel':
+        elif user_text == "carousel":
             carousel_template = CarouselTemplate(
                 columns=[
                     CarouselColumn(
@@ -85,25 +85,23 @@ def handle_message(event):
                 template=carousel_template
             )
 
-        elif user_text == 'gemini':
+        else:
             response = genai.chat.get_response(
                 model="models/chat-bison-001",
                 prompt=[{"role": "user", "content": user_text}],
                 temperature=0.7,
                 max_output_tokens=256
             )
-            reply_text = response.text + "\n\n請輸入 'confirm' 或 'carousel' 來觸發對應功能喔！"
+            reply_text = response.text
             reply = TextMessage(text=reply_text)
 
-        else:
-            reply = TextMessage(text="Thanks! 請輸入 'gemini'、'confirm' 或 'carousel' 來觸發互動功能喔！")
-
-        bot.reply_message(
+        line_bot_api.reply_message(
             ReplyMessageRequest(
                 reply_token=event.reply_token,
                 messages=[reply]
             )
         )
+
 
 if __name__ == "__main__":
     app.run()
